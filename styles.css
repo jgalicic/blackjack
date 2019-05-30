@@ -1,0 +1,223 @@
+* {
+  vertical-align: top;
+}
+
+body {
+  background-color: rgba(0, 0, 0, 0);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+html {
+  background: url(matrixng.png) no-repeat center center fixed;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+}
+
+h1 {
+  color: white;
+  padding: 3px;
+  font-size: 41px;
+  text-align: center;
+  display: inline-block;
+}
+
+h1 span {
+  color: black;
+  background-color: white;
+  padding-left: 6px;
+  padding-right: 3px;
+  padding-bottom: 3px;
+}
+
+#top_bar {
+  padding: 15px 15px 15px 13px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-content: center;
+  background: rgb(0, 0, 0);
+  background: linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(0, 0, 0, 0.4) 50%,
+    rgba(0, 0, 0, 1) 100%
+  );
+}
+
+#form_container form {
+  margin-top: 12px;
+  display: flex;
+}
+
+#form_container form button {
+  background-color: white;
+  margin-left: 2px;
+  color: black;
+  border: 2px solid white;
+}
+
+#score_container {
+  color: white;
+}
+
+#score_container p {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+#numOfPlayers {
+  color: white;
+  text-align: center;
+  margin: 0 auto;
+}
+
+h2 {
+  color: white;
+  margin: 0 0 8px 0;
+}
+
+#dealer-h2 {
+  margin-left: 15px;
+}
+
+#dealer-container {
+  margin-left: 15px;
+}
+
+.dealer,
+.player-container {
+  display: block;
+  height: 180px;
+  margin: 0 15px 50px 15px;
+  width: 100%;
+}
+
+.dealer {
+  margin-bottom: 0;
+}
+
+.card,
+#card_back {
+  display: inline-block;
+  width: 125px;
+  height: 180px;
+}
+
+form {
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  margin-top: -20px;
+}
+
+form input {
+  display: block;
+  margin: 0 auto;
+  width: 180px;
+  font-size: 17px;
+}
+
+.leave_game {
+  display: block;
+  width: 110px;
+  margin: 0 auto 3px;
+  color: white;
+  background: black;
+  border: 1px solid white;
+  border-radius: 3px;
+}
+
+.infodiv {
+  display: inline-block;
+  width: 100px;
+  height: 180px;
+  position: relative;
+  right: 30px;
+  color: white;
+}
+
+.buttons {
+  display: inline-block;
+  width: 200px;
+}
+
+.buttons button {
+  border: none;
+  margin: 10px;
+  padding: 5px 25px 8px 25px;
+  color: #eee;
+  font-size: 1.2em;
+  font-weight: bold;
+  outline: none;
+  border-radius: 3px;
+  border: 1px solid #eee;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+img {
+  height: 100%;
+}
+
+#card_back {
+  position: absolute;
+  left: -1px;
+}
+
+@keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@-o-keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@-moz-keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@-webkit-keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.flickerAnimation {
+  -webkit-animation: flickerAnimation 2s infinite;
+  -moz-animation: flickerAnimation 2s infinite;
+  -o-animation: flickerAnimation 2s infinite;
+  animation: flickerAnimation 2s ease infinite;
+}
+
+.greenborder {
+  border: 2px solid green;
+}
