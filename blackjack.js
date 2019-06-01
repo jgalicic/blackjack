@@ -131,7 +131,8 @@ $(document).ready(function() {
       }
     });
 
-    // if player has multiple aces, altScore will count one as 11 and the rest as 1.
+    // In the event that the player has multiple aces:
+    // player.altScore will count one ace as 11 and the rest as 1.
     if (player.numAces > 1) {
       let acesToMultiply = player.numAces - 1;
       let multiply = acesToMultiply * 10;
