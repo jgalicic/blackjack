@@ -221,3 +221,84 @@ img {
 .greenborder {
   border: 2px solid green;
 }
+
+@media only screen and (max-width: 600px) {
+  h1 {
+    font-size: 1em;
+  }
+
+  h2,
+  p {
+    font-size: 0.8em;
+  }
+
+  #top_bar {
+    flex-direction: column;
+  }
+
+  #form_container form {
+    display: flex;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+  }
+
+  #form_container form input,
+  #form_container form button {
+    margin: 0;
+    padding: 0;
+  }
+
+  #form_container form input {
+    margin-right: 5px;
+  }
+
+  form input {
+    display: block;
+    margin: 0 auto;
+    width: 120px;
+    font-size: 0.7em;
+  }
+  .card,
+  #card_back {
+    width: 50px;
+    height: 72px;
+  }
+
+  .dealer {
+    display: block;
+    height: 60px;
+    margin: 0 15px 10px 15px;
+  }
+
+  .player-container {
+    height: 80px;
+  }
+
+  .buttons {
+    position: relative;
+    bottom: 18px;
+    width: 120px;
+  }
+
+  .buttons button {
+    margin: 5px;
+    padding: 2px 5px;
+    font-size: 0.8em;
+    font-weight: bold;
+    outline: none;
+    border-radius: 3px;
+    border: 1px solid #eee;
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+
+  .infodiv {
+    font-size: 0.8em;
+    min-width: 90px;
+    max-width: 100px;
+    height: 180px;
+    position: absolute;
+    right: 10px;
+    color: white;
+  }
+}

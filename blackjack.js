@@ -166,6 +166,7 @@ $(document).ready(function() {
     allPlayers.forEach(player => {
       if (player.id > 0) {
         checkIfPlayerWon(player);
+        $(`#info--${player.id}`).html(player.message);
       }
     });
   }
@@ -187,7 +188,12 @@ $(document).ready(function() {
       playerHand += `<div class="buttons container">`;
 
       // disanimate hit and stand buttons
-      if (!gameHasStarted || player.stands || player.hasWon || player.hasLost) {
+      if (
+        !gameHasStarted ||
+        player.hasWon ||
+        player.hasLost ||
+        (player.stands && player.hasTakenItsTurn)
+      ) {
         playerHand += `<button class="hitbtn" id="hit--${
           player.id
         }"><span>Hit</span></button>`;
@@ -234,140 +240,145 @@ $(document).ready(function() {
   } // return dealerHand (HTML string)
 
   function checkIfPlayerWon(player) {
-    // Check if player went over 21
-
-    if (player.score > 21) {
-      player.message = "Bust! You're over 21";
-      player.hasLost = true;
-      playerIsDone(player);
-    }
-
-    // Check if player has a blackjack
-    if (
-      player.altScore == 21 &&
-      dealer.altScore != 21 &&
-      player.hits == false
-    ) {
-      player.message = "BLACKJACK! You win!";
-      player.hasWon = true;
-      playerIsDone(player);
-    }
-
-    // Check if dealer has a blackjack
-    if (
-      dealer.altScore == 21 &&
-      player.altScore != 21 &&
-      player.hasTakenItsTurn == false
-    ) {
-      player.message = "BLACKJACK! Dealer wins!";
-      player.hasLost = true;
-      playerIsDone(player);
-      $("#card_back").hide();
-    }
-
-    // Check if dealer AND player have a blackjack
-    if (
-      dealer.altScore == 21 &&
-      player.altScore == 21 &&
-      player.hasTakenItsTurn == false
-    ) {
-      player.message = "TWO BLACKJACKS! You and Dealer push!";
-      player.pushes = true;
-      playerIsDone(player);
-      $("#card_back").hide();
-    }
-
-    // Check if player has had a chance to take their first turn
-    if (player.hasTakenItsTurn) {
-      // Check if dealer is at 21 and player is not
-      if (
-        (player.score != 21 && dealer.score == 21) ||
-        (player.altScore != 21 && dealer.altScore == 21) ||
-        (player.altScore != 21 && dealer.score == 21) ||
-        (player.score != 21 && dealer.altScore == 21)
-      ) {
-        player.message = "21! Dealer wins!";
+    // Check if player gets a blackjack but dealer hasn't played yet
+    if (player.altScore == 21 && dealer.hasTakenItsTurn == false) {
+      player.message = "BLACKJACK!";
+      player.stands = true;
+    } else {
+      // Check if player went over 21
+      if (player.score > 21) {
+        player.message = "Bust! You're over 21";
         player.hasLost = true;
         playerIsDone(player);
       }
 
-      // Fix this - dealer should keep dealing cards to itself up to a soft 17 is a player is at 21
-      // Check if player is at 21 and dealer is not
-      if (
-        (player.score == 21 && dealer.score != 21) ||
-        (player.altScore == 21 && dealer.altScore != 21) ||
-        (player.altScore == 21 && dealer.score != 21) ||
-        (player.altScore == 21 && dealer.score != 21)
+      // Check if player has a blackjack
+      else if (
+        player.altScore == 21 &&
+        dealer.altScore != 21 &&
+        player.hits == false
       ) {
-        player.message = "21! You win!";
+        player.message = "BLACKJACK! You win!";
         player.hasWon = true;
         playerIsDone(player);
       }
 
-      // Check if player goes over (dealer wins)
-      if (player.score > 21 && dealer.score <= 21) {
-        player.message = "Bust! Dealer wins";
+      // Check if dealer has a blackjack
+      else if (
+        dealer.altScore == 21 &&
+        player.altScore != 21 &&
+        player.hasTakenItsTurn == false
+      ) {
+        player.message = "BLACKJACK! Dealer wins!";
         player.hasLost = true;
         playerIsDone(player);
+        $("#card_back").hide();
       }
 
-      // Check if dealer goes over (player wins)
-      if (player.score <= 21 && dealer.score > 21) {
-        player.message = "Dealer busts! You win";
-        player.hasWon = true;
+      // Check if dealer AND player have a blackjack
+      else if (
+        dealer.altScore == 21 &&
+        player.altScore == 21 &&
+        player.hasTakenItsTurn == false
+      ) {
+        player.message = "TWO BLACKJACKS! You and Dealer push!";
+        player.pushes = true;
         playerIsDone(player);
+        $("#card_back").hide();
       }
 
-      // Check if player and dealer push
-      if (player.score == dealer.score) {
-        player.message = "Push!";
-        player.hasWon = true;
-        playerIsDone(player);
-      }
-
-      // If dealer score >= 17.....
-      if (dealer.score >= 17) {
-        // Check if dealer is higher than player
+      // Check if player has had a chance to take their first turn
+      else if (player.hasTakenItsTurn) {
+        // Check if dealer is at 21 and player is not
         if (
-          (dealer.score > player.score &&
-            dealer.score <= 21 &&
-            player.stands == true) ||
-          (dealer.altScore > player.altScore &&
-            dealer.altScore <= 21 &&
-            player.stands == true) ||
-          (dealer.altScore > player.score &&
-            dealer.altScore <= 21 &&
-            player.stands == true)
+          (player.score != 21 && dealer.score == 21) ||
+          (player.altScore != 21 && dealer.altScore == 21) ||
+          (player.altScore != 21 && dealer.score == 21) ||
+          (player.score != 21 && dealer.altScore == 21)
         ) {
-          player.message = "Dealer wins!";
+          player.message = "21! Dealer wins!";
           player.hasLost = true;
           playerIsDone(player);
         }
-        // Check if player is higher than dealer
-        if (
-          (player.score > dealer.score &&
-            player.score <= 21 &&
-            player.stands == true) ||
-          (player.altScore > dealer.altScore &&
-            player.altScore <= 21 &&
-            player.stands == true) ||
-          (player.altScore > dealer.score &&
-            player.altScore <= 21 &&
-            player.stands == true)
+
+        // Check if player is at 21 and dealer is not
+        else if (
+          (player.score == 21 && dealer.score != 21) ||
+          (player.altScore == 21 && dealer.altScore != 21) ||
+          (player.altScore == 21 && dealer.score != 21) ||
+          (player.altScore == 21 && dealer.score != 21)
         ) {
-          player.message = "You win!";
+          player.message = "21! You win!";
           player.hasWon = true;
           playerIsDone(player);
         }
-      } // end dealer score >= 17
-    } // end playerTookTheirFirstTurn && gameOver == false
+
+        // Check if player goes over (dealer wins)
+        else if (player.score > 21 && dealer.score <= 21) {
+          player.message = "Bust! Dealer wins";
+          player.hasLost = true;
+          playerIsDone(player);
+        }
+
+        // Check if dealer goes over (player wins)
+        else if (player.score <= 21 && dealer.score > 21) {
+          player.message = "Dealer busts! You win";
+          player.hasWon = true;
+          playerIsDone(player);
+        }
+
+        // Check if player and dealer push
+        else if (player.score == dealer.score) {
+          player.message = "Push!";
+          player.hasWon = true;
+          playerIsDone(player);
+        }
+
+        // If dealer score >= 17.....
+        if (dealer.score >= 17) {
+          // Check if dealer is higher than player
+          if (
+            (dealer.score > player.score &&
+              dealer.score <= 21 &&
+              player.stands == true) ||
+            (dealer.altScore > player.altScore &&
+              dealer.altScore <= 21 &&
+              player.stands == true) ||
+            (dealer.altScore > player.score &&
+              dealer.altScore <= 21 &&
+              player.stands == true)
+          ) {
+            player.message = "Dealer wins!";
+            player.hasLost = true;
+            playerIsDone(player);
+          }
+          // Check if player is higher than dealer
+          else if (
+            (player.score > dealer.score &&
+              player.score <= 21 &&
+              player.stands == true) ||
+            (player.altScore > dealer.altScore &&
+              player.altScore <= 21 &&
+              player.stands == true) ||
+            (player.altScore > dealer.score &&
+              player.altScore <= 21 &&
+              player.stands == true)
+          ) {
+            player.message = "You win!";
+            player.hasWon = true;
+            playerIsDone(player);
+          }
+        } // end dealer score >= 17
+      } // end playerTookTheirFirstTurn && gameOver == false
+    }
 
     // if all players are out
     if (!checkIfAtLeastOnePlayerIsStillIn()) {
       $("#card_back").hide();
       renderAllMessages();
     }
-    player.message = "Error: Scenario not handled.";
+    // Render message to the page
+    $(`#info--${player.id}`).text(player.message);
   }
 
   function renderAllPlayersCards() {
@@ -380,13 +391,7 @@ $(document).ready(function() {
     $(".players-container").html(playersHtml);
   }
 
-  function activateAllButtons() {
-    $(".hitbtn span").addClass("flickerAnimation");
-    $(".standbtn span").addClass("flickerAnimation");
-  }
-
   function playerIsDone(player) {
-    refreshPlayerHand(player);
     refreshPlayerHand(player);
     $(`#info--${player.id}`).html(player.message);
   }
@@ -519,8 +524,6 @@ $(document).ready(function() {
       $("#card_back").hide();
     }
 
-    checkIfPlayerWon(current_player);
-
     // if all players are out
     if (!checkIfAtLeastOnePlayerIsStillIn()) {
       dealerPlaysHand();
@@ -558,16 +561,35 @@ $(document).ready(function() {
       !firstPlayerIsWaitingToJoin
     ) {
       firstPlayerIsWaitingToJoin = true;
-
-      // this will run 8 seconds after the first player joins
+      // this timer will begin once the first player joins
       setTimeout(() => {
         gameHasStarted = true;
         showNumberOfPlayersPlaying();
-        activateAllButtons();
+
+        allPlayers.forEach(player => {
+          if (player.id > 0) {
+            refreshPlayerHand(player);
+            // Render message to the page
+            $(`#info--${player.id}`).text(player.message);
+            // if player doesn't have a blackjack, animate buttons
+            if (player.altScore != 21) {
+              $(`#hit--${player.id} span`).addClass("flickerAnimation");
+              $(`#stand--${player.id} span`).addClass("flickerAnimation");
+            }
+          }
+        });
       }, 5000);
     }
 
     playerEntersGame();
+
+    allPlayers.forEach(player => {
+      if (player.id > 0) {
+        refreshPlayerHand(player);
+        // Render message to the page
+        $(`#info--${player.id}`).text(player.message);
+      }
+    });
 
     // clear form
     $(this).trigger("reset");
@@ -633,6 +655,10 @@ $(document).ready(function() {
       location.reload();
     }
   });
+
+  // setTimeout(() => {
+  //   console.log(allPlayers);
+  // }, 20000);
 
   // end jquery
 });
