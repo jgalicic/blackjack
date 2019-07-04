@@ -60,6 +60,7 @@ $(document).ready(function() {
       this.altScore = 0;
       this.numAces = 0;
       this.isPlaying = false;
+      this.isDoneMakingDecisions = false;
       this.hasWon = false;
       this.hasLost = false;
       this.pushes = false;
@@ -82,7 +83,36 @@ $(document).ready(function() {
   }
 
   // FUNCTIONS
+
+  function clog(message, color) {
+    color = color || "black";
+
+    switch (color) {
+      case "success":
+        color = "Green";
+        break;
+
+      case "info":
+        color = "DodgerBlue";
+        break;
+
+      case "error":
+        color = "Red";
+        break;
+
+      case "warning":
+        color = "Orange";
+        break;
+
+      default:
+        color = color;
+    }
+
+    console.log("%c" + message, "color:" + color);
+  }
+
   function calculateScore(player) {
+    clog(`Begin calculateScore on ${player.name}`, "green");
     player.score = 0;
     player.altScore = 0;
     player.numAces = 0;
@@ -138,91 +168,94 @@ $(document).ready(function() {
       let multiply = acesToMultiply * 10;
       player.altScore = player.altScore - multiply;
     }
+    clog(`End calculateScore on ${player.name}`, "tomato");
   }
 
   function dealerPlaysHand() {
-    dealer.hasTakenItsTurn = true;
+    clog(`Begin dealerPlaysHand`, "blue");
+    // Dealer should only play once after the waiting period is over
+    if (!dealer.hasTakenItsTurn && !waitingForOthersToJoin) {
+      dealer.hasTakenItsTurn = true;
 
-    // calculate dealer's score
-    calculateScore(dealer);
+      // flip over dealer's hidden card
+      $("#card_back").hide();
 
-    // dealer hits if they have a soft 17
-    while (dealer.altScore < 17 && checkIfAtLeastOnePlayerIsStillIn()) {
-      dealer.takeACard(deck1);
-      dealer.hits = true;
+      // calculate dealer's score
       calculateScore(dealer);
-    }
 
-    // refresh dealer's hand
-    $("#dealer-container").html(refreshDealerHand(dealer));
-
-    if (dealer.altScore > 21) {
-      $("#score").html(`<p>${dealer.score}</p>`);
-    } else {
-      $("#score").html(`<p>${dealer.altScore}</p>`);
-    }
-
-    //Loop through allPlayers to check if they have won or lost
-    allPlayers.forEach(player => {
-      if (player.id > 0) {
-        checkIfPlayerWon(player);
-        $(`#info--${player.id}`).html(player.message);
+      // dealer hits if they have a soft 17 and nobody has lost
+      while (dealer.altScore < 17 && !checkIfAtLeastOnePlayerHasLost()) {
+        dealer.takeACard(deck1);
+        dealer.hits = true;
+        calculateScore(dealer);
       }
-    });
+
+      // refresh dealer's hand
+      $("#dealer-container").html(refreshDealerHand(dealer));
+
+      if (dealer.altScore > 21) {
+        $("#score").html(`<p>${dealer.score}</p>`);
+      } else {
+        $("#score").html(`<p>${dealer.altScore}</p>`);
+      }
+    }
+    clog(`End dealerPlaysHand`, "orange");
   }
 
   function refreshPlayerHand(player) {
+    console.log("Begin refreshPlayerHand on " + player.name);
     calculateScore(player);
 
     let playerHand = "";
 
-    if (player.isPlaying) {
-      playerHand += `<div id="playercontainer--${
+    playerHand += `<div id="playercontainer--${
+      player.id
+    }" class="player-container"><div><h2>${player.name}</h2>`;
+
+    player.showHand().forEach((val, index) => {
+      playerHand += `<div id='card--${player.id}--${index +
+        1}' class='card'><img src="cards/${val}.png"></div>`;
+    });
+    playerHand += `<div class="buttons container">`;
+
+    // disanimate hit and stand buttons
+    if (
+      !gameHasStarted ||
+      player.hasWon ||
+      player.hasLost ||
+      (player.stands && player.hasTakenItsTurn)
+    ) {
+      playerHand += `<button class="hitbtn" id="hit--${
         player.id
-      }" class="player-container"><div><h2>${player.name}</h2>`;
-
-      player.showHand().forEach((val, index) => {
-        playerHand += `<div id='card--${player.id}--${index +
-          1}' class='card'><img src="cards/${val}.png"></div>`;
-      });
-      playerHand += `<div class="buttons container">`;
-
-      // disanimate hit and stand buttons
-      if (
-        !gameHasStarted ||
-        player.hasWon ||
-        player.hasLost ||
-        (player.stands && player.hasTakenItsTurn)
-      ) {
-        playerHand += `<button class="hitbtn" id="hit--${
-          player.id
-        }"><span>Hit</span></button>`;
-        playerHand += `<button class="standbtn" id="stand--${
-          player.id
-        }"><span>Stand</span></button>`;
-      }
-
-      // animate hit and stand buttons
-      else {
-        playerHand += `<button class="hitbtn" id="hit--${
-          player.id
-        }"><span class="flickerAnimation">Hit</span></button>`;
-        playerHand += `<button class="standbtn" id="stand--${
-          player.id
-        }"><span class="flickerAnimation">Stand</span></button>`;
-      }
-
-      playerHand += `<button class="exitbtn" id="exit--${
+      }"><span>Hit</span></button>`;
+      playerHand += `<button class="standbtn" id="stand--${
         player.id
-      }">Exit Game</button></div>`;
-      playerHand += `<div class="infodiv" id="info--${
-        player.id
-      }"></div</div></div></div></div>`;
+      }"><span>Stand</span></button>`;
     }
+
+    // animate hit and stand buttons
+    else {
+      playerHand += `<button class="hitbtn" id="hit--${
+        player.id
+      }"><span class="flickerAnimation">Hit</span></button>`;
+      playerHand += `<button class="standbtn" id="stand--${
+        player.id
+      }"><span class="flickerAnimation">Stand</span></button>`;
+    }
+
+    playerHand += `<button class="exitbtn" id="exit--${
+      player.id
+    }">Exit Game</button></div>`;
+    playerHand += `<div class="infodiv" id="info--${player.id}">${
+      player.message
+    }</div></div></div></div></div>`;
+
+    console.log("End refreshPlayerHand on " + player.name);
     return playerHand;
   } // return playerHand (HTML string)
 
   function refreshDealerHand(dealer) {
+    console.log("Begin refreshDealerHand on " + dealer.name);
     dealerHand = "";
 
     dealer.showHand().forEach((val, index) => {
@@ -235,44 +268,37 @@ $(document).ready(function() {
           1}' class='card'><img src="cards/${val}.png"></div>`;
       }
     });
+    console.log("End refreshDealerHand on " + dealer.name);
 
     return dealerHand;
   } // return dealerHand (HTML string)
 
   function checkIfPlayerWon(player) {
-    // Check if player gets a blackjack but dealer hasn't played yet
-    if (player.altScore == 21 && dealer.hasTakenItsTurn == false) {
+    console.log("Begin checkIfPlayerWon on " + player.name);
+
+    calculateScore(player);
+
+    if (
+      player.altScore == 21 &&
+      player.hasTakenItsTurn == false &&
+      dealer.hasTakenItsTurn == false &&
+      player.isPlaying == true
+    ) {
       player.message = "BLACKJACK!";
       player.stands = true;
+      player.hasWon = true;
+      playerIsDone(player);
     } else {
-      // Check if player went over 21
-      if (player.score > 21) {
-        player.message = "Bust! You're over 21";
-        player.hasLost = true;
-        playerIsDone(player);
-      }
-
-      // Check if player has a blackjack
-      else if (
-        player.altScore == 21 &&
-        dealer.altScore != 21 &&
-        player.hits == false
-      ) {
-        player.message = "BLACKJACK! You win!";
-        player.hasWon = true;
-        playerIsDone(player);
-      }
-
       // Check if dealer has a blackjack
-      else if (
+      if (
         dealer.altScore == 21 &&
         player.altScore != 21 &&
         player.hasTakenItsTurn == false
       ) {
+        // console.log(`Dealer has a blackjack`);
         player.message = "BLACKJACK! Dealer wins!";
         player.hasLost = true;
         playerIsDone(player);
-        $("#card_back").hide();
       }
 
       // Check if dealer AND player have a blackjack
@@ -281,14 +307,15 @@ $(document).ready(function() {
         player.altScore == 21 &&
         player.hasTakenItsTurn == false
       ) {
+        // console.log(`${player.name} & dealer both have blackjacks`);
         player.message = "TWO BLACKJACKS! You and Dealer push!";
         player.pushes = true;
         playerIsDone(player);
-        $("#card_back").hide();
       }
 
       // Check if player has had a chance to take their first turn
       else if (player.hasTakenItsTurn) {
+        // console.log(`${player.name} has taken their first turn`);
         // Check if dealer is at 21 and player is not
         if (
           (player.score != 21 && dealer.score == 21) ||
@@ -296,6 +323,7 @@ $(document).ready(function() {
           (player.altScore != 21 && dealer.score == 21) ||
           (player.score != 21 && dealer.altScore == 21)
         ) {
+          // console.log(`Dealer is at 21 - dealer wins`);
           player.message = "21! Dealer wins!";
           player.hasLost = true;
           playerIsDone(player);
@@ -308,6 +336,7 @@ $(document).ready(function() {
           (player.altScore == 21 && dealer.score != 21) ||
           (player.altScore == 21 && dealer.score != 21)
         ) {
+          // console.log(`${player.name} is at 21 - you win`);
           player.message = "21! You win!";
           player.hasWon = true;
           playerIsDone(player);
@@ -315,6 +344,7 @@ $(document).ready(function() {
 
         // Check if player goes over (dealer wins)
         else if (player.score > 21 && dealer.score <= 21) {
+          // console.log(`${player.name} is over 21`);
           player.message = "Bust! Dealer wins";
           player.hasLost = true;
           playerIsDone(player);
@@ -322,33 +352,42 @@ $(document).ready(function() {
 
         // Check if dealer goes over (player wins)
         else if (player.score <= 21 && dealer.score > 21) {
+          // console.log(`Dealer busts. ${player.name} wins`);
           player.message = "Dealer busts! You win";
-          player.hasWon = true;
-          playerIsDone(player);
-        }
-
-        // Check if player and dealer push
-        else if (player.score == dealer.score) {
-          player.message = "Push!";
           player.hasWon = true;
           playerIsDone(player);
         }
 
         // If dealer score >= 17.....
         if (dealer.score >= 17) {
+          // Check if player and dealer push
+          if (player.score == dealer.score) {
+            // console.log(`Dealer and ${player.name} push`);
+            player.message = `${player.score} - Push!`;
+            player.hasWon = true;
+            playerIsDone(player);
+          }
           // Check if dealer is higher than player
-          if (
+          else if (
             (dealer.score > player.score &&
               dealer.score <= 21 &&
+              player.numAces == 0 &&
               player.stands == true) ||
             (dealer.altScore > player.altScore &&
               dealer.altScore <= 21 &&
               player.stands == true) ||
             (dealer.altScore > player.score &&
+              dealer.numAces >= 1 &&
               dealer.altScore <= 21 &&
               player.stands == true)
           ) {
-            player.message = "Dealer wins!";
+            // console.log(`Dealer is higher than ${player.name}`);
+            if (player.altScore <= 21) {
+              player.message = `${player.altScore} - Dealer wins!`;
+            } else {
+              player.message = `${player.score} - Dealer wins!`;
+            }
+
             player.hasLost = true;
             playerIsDone(player);
           }
@@ -364,7 +403,12 @@ $(document).ready(function() {
               player.altScore <= 21 &&
               player.stands == true)
           ) {
-            player.message = "You win!";
+            // console.log(`${player.name} is higher than dealer`);
+            if (player.altScore <= 21) {
+              player.message = `${player.altScore} - You win!`;
+            } else {
+              player.message = `${player.score} - You win!`;
+            }
             player.hasWon = true;
             playerIsDone(player);
           }
@@ -372,31 +416,55 @@ $(document).ready(function() {
       } // end playerTookTheirFirstTurn && gameOver == false
     }
 
-    // if all players are out
-    if (!checkIfAtLeastOnePlayerIsStillIn()) {
-      $("#card_back").hide();
-      renderAllMessages();
+    // WARNING: THIS CAUSES AN INFINITE LOOP:
+    // // if all players are out
+    // if (!checkIfAtLeastOnePlayerIsStillIn()) {
+    //   $("#card_back").hide();
+    //   renderAllPlayersCards();
+    // }
+    // // Render message to the page
+    // $(`#info--${player.id}`).text(player.message);
+
+    if (player.message == "") {
+      // console.log(`${player.name}'s message is empty`);
     }
-    // Render message to the page
-    $(`#info--${player.id}`).text(player.message);
+    console.log("End checkIfPlayerWon on " + player.name);
   }
 
   function renderAllPlayersCards() {
+    clog(`Begin renderAllPlayersCards`, "purple");
+
     playersHtml = "";
     for (let i = 1; i < allPlayers.length; i++) {
-      if (allPlayers[i].isPlaying == true) {
-        playersHtml += refreshPlayerHand(allPlayers[i]);
-      }
+      checkIfPlayerWon(allPlayers[i]);
+      playersHtml += refreshPlayerHand(allPlayers[i]);
     }
     $(".players-container").html(playersHtml);
+
+    clog(`End renderAllPlayersCards`, "gold");
   }
 
   function playerIsDone(player) {
-    refreshPlayerHand(player);
-    $(`#info--${player.id}`).html(player.message);
+    clog("     Begin playerIsDone", "pink");
+    // check if player is still playing
+    if (player.isPlaying) {
+      player.isPlaying = false;
+      player.isDoneMakingDecisions = true;
+
+      $(`#hit--${player.id}`)
+        .children()
+        .removeClass("flickerAnimation");
+      $(`#stand--${player.id}`)
+        .children()
+        .removeClass("flickerAnimation");
+    }
+
+    clog("     End playerIsDone", "pink");
   }
 
   function showNumberOfPlayersPlaying() {
+    console.log("Begin showNumberOfPlayersPlaying");
+    // console.log(445);
     if (!gameHasStarted) {
       $("#players_playing")
         .html(`<div id="numOfPlayers">Waiting for others to join...</div>`)
@@ -413,47 +481,67 @@ $(document).ready(function() {
         $("#form_container").html(`<div id="numOfPlayers"></div>`);
       } else if (numPlayers === 1) {
         $("#form_container").html(
-          `<div id="numOfPlayers">1 person playing</div>`
+          `<div id="numOfPlayers">1 person playing</div><div class="white">Dealer must hit soft 17</div>`
         );
       } else {
         $("#form_container").html(
-          `<div id="numOfPlayers">${numPlayers} people playing</div>`
+          `<div id="numOfPlayers">${numPlayers} people playing</div><div class="white">Dealer must hit soft 17</div>`
         );
       }
     }
+    console.log("End showNumberOfPlayersPlaying");
   }
 
-  function checkIfAtLeastOnePlayerIsStillIn() {
+  function checkIfAtLeastOnePlayerHasLost() {
+    console.log("Begin checkIfAtLeastOnePlayerHasLost");
+
+    // console.log(486);
     for (var i = 1; i < allPlayers.length; i++) {
-      // return true if any players are still in the game
-      if (allPlayers[i].isPlaying) return true;
+      // return true if any players have lost
+      if (allPlayers[i].hasLost) {
+        console.log("End checkIfAtLeastOnePlayerHasLost - returning true");
+        return true;
+      }
     }
+    console.log("End checkIfAtLeastOnePlayerHasLost - returning false");
     return false;
   }
 
-  function checkIfAllPlayersStay() {
+  function checkIfAllPlayersStayOrAreOut() {
+    console.log("Begin checkIfAllPlayersStayOrAreOut");
+    // console.log(495);
     // loop through players who are still playing
     for (var i = 1; i < allPlayers.length; i++) {
-      if (allPlayers[i].isPlaying && !allPlayers[i].stands) {
-        // if any player is still deciding, return false
+      if (!allPlayers[i].isDoneMakingDecisions) {
+        console.log("End checkIfAllPlayersStayOrAreOut - returning false");
         return false;
       }
     }
+    console.log("End checkIfAllPlayersStayOrAreOut - returning true");
     // return true if all players stay
     return true;
   }
 
   function checkIfAllPlayersHaveExitedGame() {
+    console.log("Begin checkIfAllPlayersHaveExitedGame - returning true");
+    checkIfAllPlayersStayOrAreOut;
+    // console.log(502);
     for (let i = 1; i < allPlayers.length; i++) {
       if (allPlayers[i].isPlaying) {
+        console.log("End checkIfAllPlayersHaveExitedGame - returning false");
         return false;
       }
     }
+    console.log("End checkIfAllPlayersHaveExitedGame - returning true");
+
     return true;
   }
 
   function playerEntersGame() {
     let name = $("#name_input").val();
+
+    console.log("     Begin playerEntersGame ", name);
+
     let newPlayer = new Player(name, deck1, allPlayers.length); // name, deck, id
     newPlayer.isPlaying = true; // will turn false when they are out of the game
 
@@ -469,64 +557,49 @@ $(document).ready(function() {
 
     // render players hands
     renderAllPlayersCards();
-
-    // check if player got a blackjack
-    checkIfPlayerWon(newPlayer);
+    console.log("     End playerEntersGame ", name);
   }
 
   ///////////// Player Hits /////////////
   function playerHits(current_player) {
-    current_player.hits = true;
-    current_player.takeACard(deck1);
+    if (!current_player.isDoneMakingDecisions) {
+      current_player.hits = true;
+      current_player.hasTakenItsTurn = true;
+      current_player.takeACard(deck1);
+      renderAllPlayersCards();
+      checkIfPlayerWon(current_player);
 
-    // refresh cards
-    playersHtml = "";
-    // Loop through all current players
-    for (let i = 1; i < allPlayers.length; i++) {
-      playersHtml += refreshPlayerHand(allPlayers[i]);
-    }
-    $(".players-container").html(playersHtml);
-
-    // if all players have taken their first turn
-    if (checkIfAllPlayersStay()) {
-      // dealer plays its hand
-      dealerPlaysHand();
-      // flip over dealer's hidden card
-      $("#card_back").hide();
-    }
-
-    checkIfPlayerWon(current_player);
-
-    // if all players are out, reveal dealer's hand
-    if (!checkIfAtLeastOnePlayerIsStillIn()) {
-      dealerPlaysHand();
+      // if all players have taken their first turn
+      if (checkIfAllPlayersStayOrAreOut()) {
+        console.log("!!!!!!!!!!!");
+        dealerPlaysHand();
+        renderAllPlayersCards();
+      }
     }
   }
 
   //////////// Player Stands /////////////
   function playerStands(current_player) {
-    current_player.hasTakenItsTurn = true;
-    current_player.hits = false;
-    current_player.stands = true;
+    if (!current_player.isDoneMakingDecisions) {
+      current_player.hasTakenItsTurn = true;
+      current_player.hits = false;
+      current_player.stands = true;
+      current_player.isDoneMakingDecisions = true;
+      // console.log(allPlayers);
 
-    $(`#hit--${current_player.id}`)
-      .children()
-      .removeClass("flickerAnimation");
-    $(`#stand--${current_player.id}`)
-      .children()
-      .removeClass("flickerAnimation");
+      $(`#hit--${current_player.id}`)
+        .children()
+        .removeClass("flickerAnimation");
+      $(`#stand--${current_player.id}`)
+        .children()
+        .removeClass("flickerAnimation");
 
-    // if all players have stand
-    if (checkIfAllPlayersStay()) {
-      // dealer plays its hand
-      dealerPlaysHand();
-      // flip over dealer's hidden card
-      $("#card_back").hide();
-    }
-
-    // if all players are out
-    if (!checkIfAtLeastOnePlayerIsStillIn()) {
-      dealerPlaysHand();
+      // if all players stand
+      if (checkIfAllPlayersStayOrAreOut()) {
+        console.log("!!!!!!!!!!!");
+        dealerPlaysHand();
+        renderAllPlayersCards();
+      }
     }
   }
 
@@ -564,6 +637,7 @@ $(document).ready(function() {
       // this timer will begin once the first player joins
       setTimeout(() => {
         gameHasStarted = true;
+        waitingForOthersToJoin = false;
         showNumberOfPlayersPlaying();
 
         allPlayers.forEach(player => {
@@ -627,7 +701,7 @@ $(document).ready(function() {
 
       playerStands(current_player);
 
-      checkIfAllPlayersStay();
+      checkIfAllPlayersStayOrAreOut();
     }
   });
 
@@ -657,7 +731,7 @@ $(document).ready(function() {
   });
 
   // setTimeout(() => {
-  //   console.log(allPlayers);
+  //   // console.log(allPlayers);
   // }, 20000);
 
   // end jquery
